@@ -1,10 +1,26 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from base64 import b64decode, b64encode
+from fastapi.middleware.cors import CORSMiddleware
 import random
 import hashlib
 
 app = FastAPI()
+
+# Setup CORS
+origins = [
+    "*",  # Allows all origins
+    # Alternatively, specify your domain
+    # "https://your-frontend-domain.com",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 exported_algorithm = "RSA"
 exported_bits = 3584
@@ -104,6 +120,7 @@ def pack_serial(params):
 
 @app.post("/generate_serial")
 def generate_serial(params: Params):
+    logging.info(f"Received request with params: {params}")
     if exported_algorithm != "RSA":
         raise HTTPException(status_code=400, detail=f"Unsupported key generation algorithm: {exported_algorithm}")
 
@@ -136,4 +153,5 @@ def generate_serial(params: Params):
     res_bytes = base10_decode(res_number)
     res_b64 = b64encode(res_bytes).decode('utf-8')
 
+    logging.info(f"Generated serial: {res_b64}")
     return {"serial": res_b64}
